@@ -29,16 +29,33 @@ export class GeminiChatService {
 
   constructor() {
     this.model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: SYSTEM_PROMPT
+      model: "gemini-1.5-flash"
     });
   }
 
   async startChat(history: Message[] = []) {
-    const formattedHistory = history.map(msg => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }]
-    }));
+    // Add system prompt as first message in history
+    const systemMessage = {
+      role: 'user',
+      parts: [{ text: SYSTEM_PROMPT }]
+    };
+    
+    const systemResponse = {
+      role: 'model',
+      parts: [{ text: "I understand. I'm FinSakhi, your friendly financial assistant. I'm here to help with banking, savings, UPI, and government schemes. How can I help you today?" }]
+    };
+
+    const formattedHistory = [systemMessage, systemResponse];
+    
+    // Add existing chat history
+    history.forEach(msg => {
+      if (msg.role !== 'assistant' || msg.content !== "Hello! I'm FinSakhi 👋 Ask me anything about banking, savings, UPI, or government schemes!") {
+        formattedHistory.push({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
+        });
+      }
+    });
 
     this.chat = this.model.startChat({
       history: formattedHistory,
@@ -58,8 +75,19 @@ export class GeminiChatService {
       const result = await this.chat.sendMessage(message);
       const response = await result.response;
       return response.text();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending message to Gemini:", error);
+      
+      // Check if it's an API key error
+      if (error?.message?.includes('API key')) {
+        throw new Error("API configuration error. Please check your API key.");
+      }
+      
+      // Check if it's a quota error
+      if (error?.message?.includes('quota')) {
+        throw new Error("API quota exceeded. Please try again later.");
+      }
+      
       throw new Error("Sorry, I couldn't process your message. Please try again.");
     }
   }
