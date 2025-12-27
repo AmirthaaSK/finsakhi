@@ -29,7 +29,7 @@ export class GeminiChatService {
 
   constructor() {
     this.model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-pro"
+      model: "models/gemini-pro"
     });
   }
 
@@ -50,11 +50,9 @@ export class GeminiChatService {
   async sendMessage(message: string): Promise<string> {
     try {
       // Simple direct call without chat history for now
-      const result = await this.model.generateContent([
-        { text: SYSTEM_PROMPT },
-        { text: `User question: ${message}\n\nPlease respond as FinSakhi, the friendly financial assistant.` }
-      ]);
+      const prompt = `${SYSTEM_PROMPT}\n\nUser: ${message}\n\nFinSakhi:`;
       
+      const result = await this.model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
       
