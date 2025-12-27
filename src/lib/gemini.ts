@@ -25,7 +25,7 @@ Keep responses concise (2-3 short paragraphs), friendly, and actionable. Use emo
 
 export class GeminiChatService {
   private model;
-  private chat: any = null;
+  private chatHistory: any[] = [];
 
   constructor() {
     this.model = genAI.getGenerativeModel({ 
@@ -34,66 +34,57 @@ export class GeminiChatService {
   }
 
   async startChat(history: Message[] = []) {
-    // Add system prompt as first message in history
-    const systemMessage = {
-      role: 'user',
-      parts: [{ text: SYSTEM_PROMPT }]
-    };
-    
-    const systemResponse = {
-      role: 'model',
-      parts: [{ text: "I understand. I'm FinSakhi, your friendly financial assistant. I'm here to help with banking, savings, UPI, and government schemes. How can I help you today?" }]
-    };
-
-    const formattedHistory = [systemMessage, systemResponse];
-    
-    // Add existing chat history
-    history.forEach(msg => {
-      if (msg.role !== 'assistant' || msg.content !== "Hello! I'm FinSakhi 👋 Ask me anything about banking, savings, UPI, or government schemes!") {
-        formattedHistory.push({
-          role: msg.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: msg.content }]
-        });
-      }
-    });
-
-    this.chat = this.model.startChat({
-      history: formattedHistory,
-      generationConfig: {
-        maxOutputTokens: 500,
-        temperature: 0.7,
+    // Initialize with system prompt
+    this.chatHistory = [
+      {
+        role: 'user',
+        parts: [{ text: SYSTEM_PROMPT }]
       },
-    });
+      {
+        role: 'model',
+        parts: [{ text: "I understand. I'm FinSakhi, your friendly financial assistant ready to help!" }]
+      }
+    ];
   }
 
   async sendMessage(message: string): Promise<string> {
     try {
-      if (!this.chat) {
-        await this.startChat();
-      }
-
-      const result = await this.chat.sendMessage(message);
+      // Simple direct call without chat history for now
+      const result = await this.model.generateContent([
+        { text: SYSTEM_PROMPT },
+        { text: `User question: ${message}\n\nPlease respond as FinSakhi, the friendly financial assistant.` }
+      ]);
+      
       const response = await result.response;
-      return response.text();
-    } catch (error: any) {
-      console.error("Error sending message to Gemini:", error);
+      const text = response.text();
       
-      // Check if it's an API key error
-      if (error?.message?.includes('API key')) {
-        throw new Error("API configuration error. Please check your API key.");
+      console.log("Gemini response:", text);
+      return text;
+      
+    } catch (error: any) {
+      console.error("Detailed Gemini error:", error);
+      console.error("Error message:", error?.message);
+      console.error("Error response:", error?.response);
+      
+      // Check for specific error types
+      if (error?.message?.includes('API_KEY_INVALID') || error?.message?.includes('API key')) {
+        throw new Error("Invalid API key. Please check your configuration.");
       }
       
-      // Check if it's a quota error
-      if (error?.message?.includes('quota')) {
+      if (error?.message?.includes('quota') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
         throw new Error("API quota exceeded. Please try again later.");
       }
+
+      if (error?.message?.includes('SAFETY')) {
+        throw new Error("Message blocked by safety filters. Please rephrase your question.");
+      }
       
-      throw new Error("Sorry, I couldn't process your message. Please try again.");
+      throw new Error(`Failed to get response: ${error?.message || 'Unknown error'}`);
     }
   }
 
   resetChat() {
-    this.chat = null;
+    this.chatHistory = [];
   }
 }
 
