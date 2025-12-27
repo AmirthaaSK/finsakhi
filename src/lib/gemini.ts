@@ -29,7 +29,7 @@ export class GeminiChatService {
 
   constructor() {
     this.model = genAI.getGenerativeModel({ 
-      model: "models/gemini-pro"
+      model: "gemini-pro"
     });
   }
 
