@@ -10,6 +10,7 @@ import "@/lib/i18n";
 
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import Simulations from "./pages/Simulations";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const AppRoutes = () => {
       <Route path="/" element={<Dashboard />} />
       <Route path="/learn" element={<Dashboard />} />
       <Route path="/practice" element={<Dashboard />} />
+      <Route path="/simulations" element={<Simulations />} />
       <Route path="/schemes" element={<Dashboard />} />
       <Route path="/tutor" element={<Dashboard />} />
       <Route path="*" element={<NotFound />} />

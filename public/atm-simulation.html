@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FinSakhi ATM Simulation - Multi-Language</title>
+<style>
+body {
+  font-family: Arial;
+  background: #1e1e1e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+}
+
+.language-select {
+  margin-bottom: 20px;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.atm {
+  background: #2b2b2b;
+  width: 360px;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 0 25px black;
+  color: #00ff99;
+  text-align: center;
+}
+
+.screen {
+  background: black;
+  color: #00ff99;
+  padding: 20px;
+  height: 100px;
+  border-radius: 8px;
+  font-size: 18px;
+  margin-bottom: 15px;
+  white-space: pre-line;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+button {
+  padding: 18px;
+  font-size: 18px;
+  border: none;
+  border-radius: 8px;
+  background: #444;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #00ff99;
+  color: black;
+}
+
+.action {
+  grid-column: span 3;
+  background: #ff9800;
+}
+</style>
+</head>
+<body>
+
+<select id="language" class="language-select">
+  <option value="ta-IN">தமிழ்</option>
+  <option value="en-US">English</option>
+  <option value="hi-IN">हिन्दी</option>
+</select>
+
+<div class="atm">
+  <div class="screen" id="screen">Insert your ATM card</div>
+  <div class="keypad" id="keypad">
+    <button class="action" onclick="askPIN()">Insert Card</button>
+  </div>
+</div>
+
+<script>
+let pin = "";
+let lang = "ta-IN"; // default Tamil
+const screen = document.getElementById("screen");
+const keypad = document.getElementById("keypad");
+const languageSelect = document.getElementById("language");
+
+languageSelect.addEventListener("change", () => {
+  lang = languageSelect.value;
+  restart();
+});
+
+// Function to speak
+function speak(text) {
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang;
+  window.speechSynthesis.speak(utter);
+}
+
+// Screen messages in multiple languages
+const messages = {
+  insertCard: {
+    "ta-IN": "உங்கள் ATM கார்டை இடுக",
+    "en-US": "Insert your ATM card",
+    "hi-IN": "अपना एटीएम कार्ड डालें"
+  },
+  enterPIN: {
+    "ta-IN": "உங்கள் 4-அங்க PIN ஐ பதிவு செய்யவும்:",
+    "en-US": "Enter your 4-digit PIN:",
+    "hi-IN": "अपना 4 अंकों का PIN दर्ज करें:"
+  },
+  pinAccepted: {
+    "ta-IN": "PIN ஏற்றுக்கொள்ளப்பட்டது. பண பரிவர்த்தனை தேர்ந்தெடுக்கவும்:",
+    "en-US": "PIN accepted. Select Transaction:",
+    "hi-IN": "PIN स्वीकार किया गया। लेन-देन चुनें:"
+  },
+  balance: {
+    "ta-IN": "உங்கள் இருப்பு: ₹5,000\n\nஉங்கள் கார்டை எடுத்துக்கொள்ளவும்.",
+    "en-US": "Your balance is ₹5,000\n\nPlease remove your card.",
+    "hi-IN": "आपका बैलेंस: ₹5,000\n\nकृपया अपना कार्ड निकालें।"
+  },
+  selectAmount: {
+    "ta-IN": "எடுக்கும் தொகையை தேர்ந்தெடுக்கவும்:",
+    "en-US": "Select amount to withdraw:",
+    "hi-IN": "निकासी के लिए राशि चुनें:"
+  },
+  cashDispense: {
+    "ta-IN": amount => `தயவுசெய்து பணத்தை எடுத்துக்கொள்ளவும்: ₹${amount}\n\nஉங்கள் கார்டை எடுத்துக்கொள்ளவும்.`,
+    "en-US": amount => `Please collect your cash: ₹${amount}\n\nRemove your card.`,
+    "hi-IN": amount => `कृपया अपना नकद प्राप्त करें: ₹${amount}\n\nअपना कार्ड निकालें।`
+  },
+  thankYou: {
+    "ta-IN": "FinSakhi ATM ஐ பயன்படுத்தியதற்கு நன்றி!",
+    "en-US": "Thank you for using FinSakhi ATM!",
+    "hi-IN": "FinSakhi ATM का उपयोग करने के लिए धन्यवाद!"
+  },
+  clear: {
+    "ta-IN": "சரி செய்ய",
+    "en-US": "Clear",
+    "hi-IN": "साफ़ करें"
+  },
+  enter: {
+    "ta-IN": "உள்ளிடுக",
+    "en-US": "Enter",
+    "hi-IN": "दर्ज करें"
+  },
+  finish: {
+    "ta-IN": "முடித்து விடு",
+    "en-US": "Finish",
+    "hi-IN": "समाप्त करें"
+  }
+};
+
+// Step 1: Ask PIN
+function askPIN() {
+  const msg = messages.enterPIN[lang];
+  screen.innerText = msg;
+  speak(msg);
+  pin = "";
+  showPINPad();
+}
+
+// Step 2: PIN keypad
+function showPINPad() {
+  keypad.innerHTML = "";
+  for (let i = 1; i <= 9; i++) {
+    let btn = document.createElement("button");
+    btn.innerText = i;
+    btn.onclick = () => enterPIN(i);
+    keypad.appendChild(btn);
+  }
+  let zeroBtn = document.createElement("button");
+  zeroBtn.innerText = 0;
+  zeroBtn.onclick = () => enterPIN(0);
+  keypad.appendChild(zeroBtn);
+
+  let clearBtn = document.createElement("button");
+  clearBtn.innerText = messages.clear[lang];
+  clearBtn.className = "action";
+  clearBtn.onclick = clearPIN;
+  keypad.appendChild(clearBtn);
+
+  let enterBtn = document.createElement("button");
+  enterBtn.innerText = messages.enter[lang];
+  enterBtn.className = "action";
+  enterBtn.onclick = confirmPIN;
+  keypad.appendChild(enterBtn);
+}
+
+// Enter PIN
+function enterPIN(num) {
+  if (pin.length < 4) {
+    pin += num;
+    screen.innerText = messages.enterPIN[lang] + "\n" + "*".repeat(pin.length);
+  }
+}
+
+// Clear PIN
+function clearPIN() {
+  pin = "";
+  screen.innerText = messages.enterPIN[lang];
+  speak(messages.enterPIN[lang]);
+}
+
+// Confirm PIN
+function confirmPIN() {
+  const msg = messages.pinAccepted[lang];
+  screen.innerText = msg;
+  speak(msg);
+  keypad.innerHTML = `
+    <button onclick="showBalance()">💰 Balance</button>
+    <button onclick="withdraw()">💸 Withdraw</button>
+  `;
+}
+
+// Show balance
+function showBalance() {
+  const msg = messages.balance[lang];
+  screen.innerText = msg;
+  speak(msg);
+  keypad.innerHTML = `<button class="action" onclick="thankYou()">${messages.finish[lang]}</button>`;
+}
+
+// Withdraw
+function withdraw() {
+  const msg = messages.selectAmount[lang];
+  screen.innerText = msg;
+  speak(msg);
+  keypad.innerHTML = `
+    <button onclick="cashDispense(500)">₹500</button>
+    <button onclick="cashDispense(1000)">₹1000</button>
+    <button onclick="cashDispense(2000)">₹2000</button>
+  `;
+}
+
+function cashDispense(amount) {
+  const msg = messages.cashDispense[lang](amount);
+  screen.innerText = msg;
+  speak(msg);
+  keypad.innerHTML = `<button class="action" onclick="thankYou()">${messages.finish[lang]}</button>`;
+}
+
+// Thank you
+function thankYou() {
+  const msg = messages.thankYou[lang];
+  screen.innerText = msg;
+  speak(msg);
+  keypad.innerHTML = `<button class="action" onclick="restart()">${messages.finish[lang]}</button>`;
+}
+
+// Restart
+function restart() {
+  pin = "";
+  const msg = messages.insertCard[lang];
+  screen.innerText = msg;
+  speak(msg);
+  keypad.innerHTML = `<button class="action" onclick="askPIN()">Insert Card</button>`;
+}
+</script>
+
+</body>
+</html>

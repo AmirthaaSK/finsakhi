@@ -83,7 +83,7 @@ const Dashboard = () => {
             description={t('dashboard.practiceDesc')}
             icon={Smartphone}
             variant="accent"
-            onClick={() => navigate('/practice')}
+            onClick={() => navigate('/simulations')}
             delay={0.5}
           />
         </div>
