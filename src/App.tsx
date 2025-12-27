@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Simulations from "./pages/Simulations";
 import Tutor from "./pages/Tutor";
 import NotFound from "./pages/NotFound";
+import { FloatingChatbot } from "@/components/FloatingChatbot";
 
 const queryClient = new QueryClient();
 
@@ -52,6 +53,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AppRoutes />
+        <FloatingChatbot />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
