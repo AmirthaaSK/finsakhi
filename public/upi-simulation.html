@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FinSakhi UPI Simulation</title>
+<style>
+body {
+  font-family: Arial;
+  background: #1e1e1e;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  flex-direction: column;
+}
+
+.language-select {
+  margin-bottom: 20px;
+  padding: 10px;
+  font-size: 16px;
+}
+
+.upi-app {
+  background: #2b2b2b;
+  width: 360px;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 0 25px black;
+  color: #00ff99;
+  text-align: center;
+}
+
+.screen {
+  background: black;
+  color: #00ff99;
+  padding: 20px;
+  height: 140px;
+  border-radius: 8px;
+  font-size: 18px;
+  margin-bottom: 15px;
+  white-space: pre-line;
+  overflow-wrap: break-word;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+button {
+  padding: 16px;
+  font-size: 16px;
+  border: none;
+  border-radius: 8px;
+  background: #444;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #00ff99;
+  color: black;
+}
+
+.action {
+  grid-column: span 3;
+  background: #ff9800;
+}
+</style>
+</head>
+<body>
+
+<select id="language" class="language-select">
+  <option value="ta-IN">தமிழ்</option>
+  <option value="en-US" selected>English</option>
+  <option value="hi-IN">हिन्दी</option>
+</select>
+
+<div class="upi-app">
+  <div class="screen" id="screen">Welcome to FinSakhi UPI</div>
+  <div class="keypad" id="keypad">
+    <button class="action" onclick="startUPI()">Open App</button>
+  </div>
+</div>
+
+<script>
+let pin = "";     // stores UPI PIN
+let upiID = "";   // stores UPI ID
+let lang = "en-US";
+const screen = document.getElementById("screen");
+const keypad = document.getElementById("keypad");
+const languageSelect = document.getElementById("language");
+
+languageSelect.addEventListener("change", () => {
+  lang = languageSelect.value;
+  restart();
+});
+
+// Text-to-speech
+function speak(text) {
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang;
+  window.speechSynthesis.speak(utter);
+}
+
+// Messages
+const messages = {
+  welcome: {
+    "ta-IN":"FinSakhi UPI-க்கு வரவேற்கின்றோம்",
+    "en-US":"Welcome to FinSakhi UPI",
+    "hi-IN":"FinSakhi UPI में आपका स्वागत है"
+  },
+  enterPIN: {
+    "ta-IN":"உங்கள் 4-அங்க UPI PIN ஐ பதிவு செய்யவும்",
+    "en-US":"Enter your 4-digit UPI PIN:",
+    "hi-IN":"अपना 4 अंकों का UPI PIN दर्ज करें:"
+  },
+  pinAccepted: {
+    "ta-IN":"PIN ஏற்றுக்கொள்ளப்பட்டது. பண பரிவர்த்தனை தேர்ந்தெடுக்கவும்:",
+    "en-US":"PIN accepted. Select Transaction:",
+    "hi-IN":"PIN स्वीकार किया गया। लेन-देन चुनें"
+  },
+  sendMoney: {
+    "ta-IN":"பணத்தை அனுப்பவும்",
+    "en-US":"Send Money",
+    "hi-IN":"पैसा भेजें"
+  },
+  checkBalance: {
+    "ta-IN":"இருப்பு கணக்கு பார்க்கவும்",
+    "en-US":"Check Balance",
+    "hi-IN":"बैलेंस देखें"
+  },
+  enterUPI: {
+    "ta-IN":"UPI ID அல்லது Phone Number ஐ உள்ளிடுக",
+    "en-US":"Enter UPI ID or Phone Number",
+    "hi-IN":"UPI ID या फ़ोन नंबर दर्ज करें"
+  },
+  enterAmount: {
+    "ta-IN":"தொகையை உள்ளிடுக",
+    "en-US":"Enter amount",
+    "hi-IN":"राशि दर्ज करें"
+  },
+  success: {
+    "ta-IN":"பணம் வெற்றிகரமாக அனுப்பப்பட்டது!",
+    "en-US":"Transaction successful!",
+    "hi-IN":"लेन-देन सफल!"
+  },
+  balanceInfo: {
+    "ta-IN":"உங்கள் இருப்பு: ₹5,000",
+    "en-US":"Your balance is ₹5,000",
+    "hi-IN":"आपका बैलेंस: ₹5,000"
+  },
+  thankYou: {
+    "ta-IN":"FinSakhi UPI ஐ பயன்படுத்தியதற்கு நன்றி!",
+    "en-US":"Thank you for using FinSakhi UPI!",
+    "hi-IN":"FinSakhi UPI का उपयोग करने के लिए धन्यवाद!"
+  },
+  clear: {
+    "ta-IN":"சரி செய்ய",
+    "en-US":"Clear",
+    "hi-IN":"साफ़ करें"
+  },
+  enter: {
+    "ta-IN":"உள்ளிடுக",
+    "en-US":"Enter",
+    "hi-IN":"दर्ज करें"
+  },
+  finish: {
+    "ta-IN":"முடித்து விடு",
+    "en-US":"Finish",
+    "hi-IN":"समाप्त करें"
+  }
+};
+
+// Start UPI
+function startUPI() {
+  pin = "";
+  screen.innerText = messages.enterPIN[lang];
+  speak(messages.enterPIN[lang]);
+  showPINPad();
+}
+
+// PIN pad (numbers only)
+function showPINPad() {
+  keypad.innerHTML = "";
+  for (let i = 1; i <= 9; i++) {
+    let btn = document.createElement("button");
+    btn.innerText = i;
+    btn.onclick = () => enterPIN(i);
+    keypad.appendChild(btn);
+  }
+  let zeroBtn = document.createElement("button");
+  zeroBtn.innerText = 0;
+  zeroBtn.onclick = () => enterPIN(0);
+  keypad.appendChild(zeroBtn);
+
+  let clearBtn = document.createElement("button");
+  clearBtn.innerText = messages.clear[lang];
+  clearBtn.className = "action";
+  clearBtn.onclick = () => { pin = ""; screen.innerText = messages.enterPIN[lang]; speak(messages.enterPIN[lang]); };
+  keypad.appendChild(clearBtn);
+
+  let enterBtn = document.createElement("button");
+  enterBtn.innerText = messages.enter[lang];
+  enterBtn.className = "action";
+  enterBtn.onclick = confirmPIN;
+  keypad.appendChild(enterBtn);
+}
+
+// Enter PIN
+function enterPIN(num) {
+  if (pin.length < 4) {
+    pin += num;
+    screen.innerText = messages.enterPIN[lang] + "\n" + "*".repeat(pin.length);
+  }
+}
+
+// Confirm PIN
+function confirmPIN() {
+  screen.innerText = messages.pinAccepted[lang];
+  speak(messages.pinAccepted[lang]);
+  keypad.innerHTML = `
+    <button onclick="sendMoney()">${messages.sendMoney[lang]}</button>
+    <button onclick="checkBalance()">${messages.checkBalance[lang]}</button>
+  `;
+}
+
+// Enter UPI ID
+function sendMoney() {
+  upiID = "";
+  screen.innerText = messages.enterUPI[lang] + "\n";
+  speak(messages.enterUPI[lang]);
+  keypad.innerHTML = "";
+
+  const chars = "1234567890abcdefghijklmnopqrstuvwxyz@.";
+  for (let c of chars) {
+    let btn = document.createElement("button");
+    btn.innerText = c;
+    btn.onclick = () => enterUPIID(c);
+    keypad.appendChild(btn);
+  }
+
+  let clearBtn = document.createElement("button");
+  clearBtn.innerText = messages.clear[lang];
+  clearBtn.className = "action";
+  clearBtn.onclick = () => { upiID = ""; screen.innerText = messages.enterUPI[lang] + "\n"; };
+  keypad.appendChild(clearBtn);
+
+  let nextBtn = document.createElement("button");
+  nextBtn.innerText = messages.enter[lang];
+  nextBtn.className = "action";
+  nextBtn.onclick = enterAmountScreen;
+  keypad.appendChild(nextBtn);
+}
+
+// Enter UPI ID char
+function enterUPIID(char) {
+  upiID += char;
+  screen.innerText = messages.enterUPI[lang] + "\n" + upiID;
+}
+
+// Enter Amount
+function enterAmountScreen() {
+  screen.innerText = messages.enterAmount[lang];
+  speak(messages.enterAmount[lang]);
+  keypad.innerHTML = "";
+
+  [100, 500, 1000].forEach(amount => {
+    let btn = document.createElement("button");
+    btn.innerText = `₹${amount}`;
+    btn.onclick = () => completeTransaction(amount);
+    keypad.appendChild(btn);
+  });
+}
+
+// Complete Transaction
+function completeTransaction(amount) {
+  screen.innerText = messages.success[lang];
+  speak(messages.success[lang]);
+  keypad.innerHTML = `<button class="action" onclick="thankYou()">${messages.finish[lang]}</button>`;
+}
+
+// Check Balance
+function checkBalance() {
+  screen.innerText = messages.balanceInfo[lang];
+  speak(messages.balanceInfo[lang]);
+  keypad.innerHTML = `<button class="action" onclick="thankYou()">${messages.finish[lang]}</button>`;
+}
+
+// Thank You
+function thankYou() {
+  screen.innerText = messages.thankYou[lang];
+  speak(messages.thankYou[lang]);
+  keypad.innerHTML = `<button class="action" onclick="restart()">${messages.finish[lang]}</button>`;
+}
+
+// Restart
+function restart() {
+  pin = "";
+  upiID = "";
+  screen.innerText = messages.welcome[lang];
+  speak(messages.welcome[lang]);
+  keypad.innerHTML = `<button class="action" onclick="startUPI()">Open App</button>`;
+}
+</script>
+
+</body>
+</html>
